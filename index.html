@@ -7,6 +7,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        .history-item:hover {
+            background-color: #f3f4f6;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4 md:p-6">
     <div class="max-w-6xl mx-auto">
@@ -81,17 +87,45 @@
                 </form>
             </div>
             
-            <!-- Dados Salvos -->
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h3 class="text-xl font-semibold text-gray-800 mb-4">Dados Salvos</h3>
-                <div id="saved-data" class="space-y-3">
-                    <p class="text-sm text-gray-600">Nenhum dado salvo ainda.</p>
+            <!-- Dados Salvos e Histórico -->
+            <div class="bg-white rounded-lg shadow-md p-6 space-y-6">
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Registro Atual</h3>
+                    <div id="saved-data" class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campo</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody id="saved-data-body" class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td colspan="2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Nenhum dado salvo ainda</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
                 
-                <div class="mt-6">
+                <div>
                     <h3 class="text-xl font-semibold text-gray-800 mb-4">Histórico</h3>
-                    <div id="history-list" class="space-y-2 max-h-96 overflow-y-auto">
-                        <p class="text-sm text-gray-600">Nenhum registro no histórico.</p>
+                    <div id="history-list" class="overflow-y-auto max-h-96">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Disciplina</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Turma</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-list-body" class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Nenhum registro no histórico</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -103,8 +137,9 @@
             const form = document.getElementById('diario-form');
             const exportPdfBtn = document.getElementById('export-pdf');
             const clearDataBtn = document.getElementById('clear-data');
-            const savedDataDiv = document.getElementById('saved-data');
-            const historyList = document.getElementById('history-list');
+            const savedDataBody = document.getElementById('saved-data-body');
+            const historyListBody = document.getElementById('history-list-body');
+            
             const localStorageKey = 'diarioDeClasseData';
             const localStorageHistoryKey = 'diarioDeClasseHistory';
 
@@ -134,7 +169,7 @@
                     turma: document.getElementById('turma').value,
                     cargaHoraria: document.getElementById('cargaHoraria').value,
                     conteudo: document.getElementById('conteudo').value,
-                    observacoes: document.getElementById('observacoes').value,
+                    observacoes: document.getElementById('observacoes').value || 'Nenhuma',
                     timestamp: new Date().toISOString()
                 };
                 
@@ -142,7 +177,7 @@
                 localStorage.setItem(localStorageKey, JSON.stringify(formData));
                 
                 // Adicionar ao histórico
-                const history = JSON.parse(localStorage.getItem(localStorageHistoryKey) || [];
+                const history = JSON.parse(localStorage.getItem(localStorageHistoryKey)) || [];
                 history.unshift(formData);
                 localStorage.setItem(localStorageHistoryKey, JSON.stringify(history));
                 
@@ -162,7 +197,7 @@
                     document.getElementById('turma').value = formData.turma;
                     document.getElementById('cargaHoraria').value = formData.cargaHoraria;
                     document.getElementById('conteudo').value = formData.conteudo;
-                    document.getElementById('observacoes').value = formData.observacoes;
+                    document.getElementById('observacoes').value = formData.observacoes === 'Nenhuma' ? '' : formData.observacoes;
                     displaySavedData(formData);
                 }
             }
@@ -174,41 +209,66 @@
 
             function displaySavedData(data) {
                 if (!data) {
-                    savedDataDiv.innerHTML = '<p class="text-sm text-gray-600">Nenhum dado salvo ainda.</p>';
+                    savedDataBody.innerHTML = `
+                        <tr>
+                            <td colspan="2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Nenhum dado salvo ainda</td>
+                        </tr>
+                    `;
                     return;
                 }
                 
-                savedDataDiv.innerHTML = `
-                    <div class="space-y-2">
-                        <p><strong class="text-gray-700">Data:</strong> <span class="text-gray-600">${formatDate(data.data)}</span></p>
-                        <p><strong class="text-gray-700">Professor:</strong> <span class="text-gray-600">${data.professor}</span></p>
-                        <p><strong class="text-gray-700">Disciplina:</strong> <span class="text-gray-600">${data.disciplina}</span></p>
-                        <p><strong class="text-gray-700">Turma:</strong> <span class="text-gray-600">${data.turma}</span></p>
-                        <p><strong class="text-gray-700">Carga Horária:</strong> <span class="text-gray-600">${data.cargaHoraria}</span></p>
-                        <p><strong class="text-gray-700">Conteúdo:</strong> <span class="text-gray-600">${data.conteudo}</span></p>
-                        <p><strong class="text-gray-700">Observações:</strong> <span class="text-gray-600">${data.observacoes || 'Nenhuma'}</span></p>
-                    </div>
+                savedDataBody.innerHTML = `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Data</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(data.data)}</td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Professor</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.professor}</td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Disciplina</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.disciplina}</td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Turma</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.turma}</td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Carga Horária</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.cargaHoraria}</td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Conteúdo</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${data.conteudo}</td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Observações</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${data.observacoes}</td>
+                    </tr>
                 `;
             }
 
             function displayHistory(history) {
                 if (history.length === 0) {
-                    historyList.innerHTML = '<p class="text-sm text-gray-600">Nenhum registro no histórico.</p>';
+                    historyListBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Nenhum registro no histórico</td>
+                        </tr>
+                    `;
                     return;
                 }
                 
-                historyList.innerHTML = history.map(item => `
-                    <div class="border-b border-gray-200 pb-2 mb-2">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="font-medium text-gray-700">${formatDate(item.data)} - ${item.disciplina}</p>
-                                <p class="text-sm text-gray-600">Turma: ${item.turma} | Prof: ${item.professor}</p>
-                            </div>
-                            <button onclick="loadHistoryItem(${item.id})" class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors">
-                                Carregar
-                            </button>
-                        </div>
-                    </div>
+                historyListBody.innerHTML = history.map(item => `
+                    <tr class="history-item">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(item.data)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.disciplina}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.turma}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <button onclick="loadHistoryItem(${item.id})" class="text-blue-600 hover:text-blue-900 mr-3">Carregar</button>
+                            <button onclick="deleteHistoryItem(${item.id})" class="text-red-600 hover:text-red-900">Excluir</button>
+                        </td>
+                    </tr>
                 `).join('');
             }
 
@@ -224,53 +284,73 @@
                 
                 // Título
                 doc.setFontSize(18);
-                doc.text('Diário de Classe', 14, 15);
+                doc.setTextColor(40, 40, 40);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Diário de Classe', 14, 20);
                 
-                // Dados atuais
-                const data = {
-                    data: document.getElementById('data').value,
-                    professor: document.getElementById('professor').value,
-                    disciplina: document.getElementById('disciplina').value,
-                    turma: document.getElementById('turma').value,
-                    cargaHoraria: document.getElementById('cargaHoraria').value,
-                    conteudo: document.getElementById('conteudo').value,
-                    observacoes: document.getElementById('observacoes').value || 'Nenhuma'
-                };
+                // Data de emissão
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Emitido em: ${new Date().toLocaleDateString('pt-BR')}`, 14, 28);
+                
+                // Dados do registro atual
+                const savedData = JSON.parse(localStorage.getItem(localStorageKey));
+                
+                if (!savedData) {
+                    alert('Nenhum dado encontrado para exportar!');
+                    return;
+                }
                 
                 // Configuração da tabela
                 const columns = [
-                    {title: "Campo", dataKey: "campo"},
-                    {title: "Valor", dataKey: "valor"}
+                    {header: 'Campo', dataKey: 'campo'},
+                    {header: 'Valor', dataKey: 'valor'}
                 ];
                 
                 const rows = [
-                    {campo: "Data", valor: formatDate(data.data)},
-                    {campo: "Professor", valor: data.professor},
-                    {campo: "Disciplina", valor: data.disciplina},
-                    {campo: "Turma", valor: data.turma},
-                    {campo: "Carga Horária", valor: data.cargaHoraria},
-                    {campo: "Conteúdo", valor: data.conteudo},
-                    {campo: "Observações", valor: data.observacoes}
+                    {campo: 'Data', valor: formatDate(savedData.data)},
+                    {campo: 'Professor', valor: savedData.professor},
+                    {campo: 'Disciplina', valor: savedData.disciplina},
+                    {campo: 'Turma', valor: savedData.turma},
+                    {campo: 'Carga Horária', valor: savedData.cargaHoraria},
+                    {campo: 'Conteúdo', valor: savedData.conteudo},
+                    {campo: 'Observações', valor: savedData.observacoes}
                 ];
                 
                 // Adiciona a tabela
                 doc.autoTable({
-                    head: [columns.map(col => col.title)],
-                    body: rows.map(row => [row.campo, row.valor]),
-                    startY: 25,
-                    theme: 'grid',
-                    headStyles: {
+                    columns: columns,
+                    body: rows,
+                    startY: 35,
+                    margin: {horizontal: 14},
+                    styles: {
+                        fontSize: 10,
+                        cellPadding: 4,
+                        overflow: 'linebreak',
+                        valign: 'middle'
+                    },
+                    headerStyles: {
                         fillColor: [41, 128, 185],
                         textColor: 255,
                         fontStyle: 'bold'
                     },
                     alternateRowStyles: {
                         fillColor: [245, 245, 245]
+                    },
+                    columnStyles: {
+                        campo: {
+                            fontStyle: 'bold',
+                            cellWidth: 50
+                        },
+                        valor: {
+                            cellWidth: 'auto'
+                        }
                     }
                 });
                 
                 // Salva o PDF
-                doc.save('diario-de-classe.pdf');
+                doc.save(`diario-classe-${formatDate(savedData.data).replace(/\//g, '-')}.pdf`);
             }
 
             function clearData() {
@@ -278,8 +358,8 @@
                     localStorage.removeItem(localStorageKey);
                     localStorage.removeItem(localStorageHistoryKey);
                     form.reset();
-                    savedDataDiv.innerHTML = '<p class="text-sm text-gray-600">Nenhum dado salvo ainda.</p>';
-                    historyList.innerHTML = '<p class="text-sm text-gray-600">Nenhum registro no histórico.</p>';
+                    displaySavedData(null);
+                    displayHistory([]);
                     alert('Todos os dados foram removidos!');
                 }
             }
@@ -295,7 +375,7 @@
                     document.getElementById('turma').value = item.turma;
                     document.getElementById('cargaHoraria').value = item.cargaHoraria;
                     document.getElementById('conteudo').value = item.conteudo;
-                    document.getElementById('observacoes').value = item.observacoes || '';
+                    document.getElementById('observacoes').value = item.observacoes === 'Nenhuma' ? '' : item.observacoes;
                     
                     // Atualiza os dados atuais
                     localStorage.setItem(localStorageKey, JSON.stringify(item));
@@ -303,6 +383,24 @@
                     
                     // Rola para o topo do formulário
                     document.querySelector('form').scrollIntoView({ behavior: 'smooth' });
+                }
+            };
+
+            // Função global para excluir item do histórico
+            window.deleteHistoryItem = function(id) {
+                if (confirm('Tem certeza que deseja excluir este registro do histórico?')) {
+                    let history = JSON.parse(localStorage.getItem(localStorageHistoryKey)) || [];
+                    history = history.filter(item => item.id !== id);
+                    localStorage.setItem(localStorageHistoryKey, JSON.stringify(history));
+                    displayHistory(history);
+                    
+                    // Verifica se o item excluído era o registro atual
+                    const currentData = JSON.parse(localStorage.getItem(localStorageKey));
+                    if (currentData && currentData.id === id) {
+                        localStorage.removeItem(localStorageKey);
+                        form.reset();
+                        displaySavedData(null);
+                    }
                 }
             };
         });
