@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diário de Classe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-6">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-6">Diário de Classe</h1>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Formulário -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <form id="diario-form" class="space-y-4">
+                    <div>
+                        <label for="data" class="block text-sm font-medium text-gray-700 mb-1">Data:</label>
+                        <input type="date" id="data" name="data" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label for="professor" class="block text-sm font-medium text-gray-700 mb-1">Professor:</label>
+                        <input type="text" id="professor" name="professor" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label for="disciplina" class="block text-sm font-medium text-gray-700 mb-1">Disciplina:</label>
+                        <input type="text" id="disciplina" name="disciplina" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label for="turma" class="block text-sm font-medium text-gray-700 mb-1">Turma:</label>
+                        <select id="turma" name="turma" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="6ºM1">6ºM1</option>
+                            <option value="7ºM1">7ºM1</option>
+                            <option value="8ºM1">8ºM1</option>
+                            <option value="9ºM1">9ºM1</option>
+                            <option value="6ºV1">6ºV1</option>
+                            <option value="7ºV1">7ºV1</option>
+                            <option value="8ºV1">8ºV1</option>
+                            <option value="EJA">EJA</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="cargaHoraria" class="block text-sm font-medium text-gray-700 mb-1">Carga Horária:</label>
+                        <input type="number" id="cargaHoraria" name="cargaHoraria" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label for="conteudo" class="block text-sm font-medium text-gray-700 mb-1">Conteúdo:</label>
+                        <textarea id="conteudo" name="conteudo" rows="4" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label for="observacoes" class="block text-sm font-medium text-gray-700 mb-1">Observações:</label>
+                        <textarea id="observacoes" name="observacoes" rows="4"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-3 pt-2">
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+                            Salvar
+                        </button>
+                        <button type="button" id="export-pdf" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors">
+                            Exportar para PDF
+                        </button>
+                        <button type="button" id="clear-data" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">
+                            Limpar Dados
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Dados Salvos -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Dados Salvos</h3>
+                <div id="saved-data" class="space-y-3">
+                    <p class="text-sm text-gray-600">Nenhum dado salvo ainda.</p>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Histórico</h3>
+                    <div id="history-list" class="space-y-2 max-h-96 overflow-y-auto">
+                        <p class="text-sm text-gray-600">Nenhum registro no histórico.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('diario-form');
+            const exportPdfBtn = document.getElementById('export-pdf');
+            const clearDataBtn = document.getElementById('clear-data');
+            const savedDataDiv = document.getElementById('saved-data');
+            const historyList = document.getElementById('history-list');
+            const localStorageKey = 'diarioDeClasseData';
+            const localStorageHistoryKey = 'diarioDeClasseHistory';
+
+            // Carregar dados do localStorage
+            loadData();
+            loadHistory();
+
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                saveData();
+            });
+
+            exportPdfBtn.addEventListener('click', function() {
+                exportToPdf();
+            });
+
+            clearDataBtn.addEventListener('click', function() {
+                clearData();
+            });
+
+            function saveData() {
+                const formData = {
+                    id: Date.now(),
+                    data: document.getElementById('data').value,
+                    professor: document.getElementById('professor').value,
+                    disciplina: document.getElementById('disciplina').value,
+                    turma: document.getElementById('turma').value,
+                    cargaHoraria: document.getElementById('cargaHoraria').value,
+                    conteudo: document.getElementById('conteudo').value,
+                    observacoes: document.getElementById('observacoes').value,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Salvar dados atuais
+                localStorage.setItem(localStorageKey, JSON.stringify(formData));
+                
+                // Adicionar ao histórico
+                const history = JSON.parse(localStorage.getItem(localStorageHistoryKey) || [];
+                history.unshift(formData);
+                localStorage.setItem(localStorageHistoryKey, JSON.stringify(history));
+                
+                displaySavedData(formData);
+                displayHistory(history);
+                
+                alert('Dados salvos com sucesso!');
+            }
+
+            function loadData() {
+                const savedData = localStorage.getItem(localStorageKey);
+                if (savedData) {
+                    const formData = JSON.parse(savedData);
+                    document.getElementById('data').value = formData.data;
+                    document.getElementById('professor').value = formData.professor;
+                    document.getElementById('disciplina').value = formData.disciplina;
+                    document.getElementById('turma').value = formData.turma;
+                    document.getElementById('cargaHoraria').value = formData.cargaHoraria;
+                    document.getElementById('conteudo').value = formData.conteudo;
+                    document.getElementById('observacoes').value = formData.observacoes;
+                    displaySavedData(formData);
+                }
+            }
+
+            function loadHistory() {
+                const history = JSON.parse(localStorage.getItem(localStorageHistoryKey)) || [];
+                displayHistory(history);
+            }
+
+            function displaySavedData(data) {
+                if (!data) {
+                    savedDataDiv.innerHTML = '<p class="text-sm text-gray-600">Nenhum dado salvo ainda.</p>';
+                    return;
+                }
+                
+                savedDataDiv.innerHTML = `
+                    <div class="space-y-2">
+                        <p><strong class="text-gray-700">Data:</strong> <span class="text-gray-600">${formatDate(data.data)}</span></p>
+                        <p><strong class="text-gray-700">Professor:</strong> <span class="text-gray-600">${data.professor}</span></p>
+                        <p><strong class="text-gray-700">Disciplina:</strong> <span class="text-gray-600">${data.disciplina}</span></p>
+                        <p><strong class="text-gray-700">Turma:</strong> <span class="text-gray-600">${data.turma}</span></p>
+                        <p><strong class="text-gray-700">Carga Horária:</strong> <span class="text-gray-600">${data.cargaHoraria}</span></p>
+                        <p><strong class="text-gray-700">Conteúdo:</strong> <span class="text-gray-600">${data.conteudo}</span></p>
+                        <p><strong class="text-gray-700">Observações:</strong> <span class="text-gray-600">${data.observacoes || 'Nenhuma'}</span></p>
+                    </div>
+                `;
+            }
+
+            function displayHistory(history) {
+                if (history.length === 0) {
+                    historyList.innerHTML = '<p class="text-sm text-gray-600">Nenhum registro no histórico.</p>';
+                    return;
+                }
+                
+                historyList.innerHTML = history.map(item => `
+                    <div class="border-b border-gray-200 pb-2 mb-2">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-medium text-gray-700">${formatDate(item.data)} - ${item.disciplina}</p>
+                                <p class="text-sm text-gray-600">Turma: ${item.turma} | Prof: ${item.professor}</p>
+                            </div>
+                            <button onclick="loadHistoryItem(${item.id})" class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors">
+                                Carregar
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            function formatDate(dateString) {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                return date.toLocaleDateString('pt-BR');
+            }
+
+            function exportToPdf() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Título
+                doc.setFontSize(18);
+                doc.text('Diário de Classe', 14, 15);
+                
+                // Dados atuais
+                const data = {
+                    data: document.getElementById('data').value,
+                    professor: document.getElementById('professor').value,
+                    disciplina: document.getElementById('disciplina').value,
+                    turma: document.getElementById('turma').value,
+                    cargaHoraria: document.getElementById('cargaHoraria').value,
+                    conteudo: document.getElementById('conteudo').value,
+                    observacoes: document.getElementById('observacoes').value || 'Nenhuma'
+                };
+                
+                // Configuração da tabela
+                const columns = [
+                    {title: "Campo", dataKey: "campo"},
+                    {title: "Valor", dataKey: "valor"}
+                ];
+                
+                const rows = [
+                    {campo: "Data", valor: formatDate(data.data)},
+                    {campo: "Professor", valor: data.professor},
+                    {campo: "Disciplina", valor: data.disciplina},
+                    {campo: "Turma", valor: data.turma},
+                    {campo: "Carga Horária", valor: data.cargaHoraria},
+                    {campo: "Conteúdo", valor: data.conteudo},
+                    {campo: "Observações", valor: data.observacoes}
+                ];
+                
+                // Adiciona a tabela
+                doc.autoTable({
+                    head: [columns.map(col => col.title)],
+                    body: rows.map(row => [row.campo, row.valor]),
+                    startY: 25,
+                    theme: 'grid',
+                    headStyles: {
+                        fillColor: [41, 128, 185],
+                        textColor: 255,
+                        fontStyle: 'bold'
+                    },
+                    alternateRowStyles: {
+                        fillColor: [245, 245, 245]
+                    }
+                });
+                
+                // Salva o PDF
+                doc.save('diario-de-classe.pdf');
+            }
+
+            function clearData() {
+                if (confirm('Tem certeza que deseja limpar todos os dados salvos?')) {
+                    localStorage.removeItem(localStorageKey);
+                    localStorage.removeItem(localStorageHistoryKey);
+                    form.reset();
+                    savedDataDiv.innerHTML = '<p class="text-sm text-gray-600">Nenhum dado salvo ainda.</p>';
+                    historyList.innerHTML = '<p class="text-sm text-gray-600">Nenhum registro no histórico.</p>';
+                    alert('Todos os dados foram removidos!');
+                }
+            }
+
+            // Função global para carregar item do histórico
+            window.loadHistoryItem = function(id) {
+                const history = JSON.parse(localStorage.getItem(localStorageHistoryKey)) || [];
+                const item = history.find(i => i.id === id);
+                if (item) {
+                    document.getElementById('data').value = item.data;
+                    document.getElementById('professor').value = item.professor;
+                    document.getElementById('disciplina').value = item.disciplina;
+                    document.getElementById('turma').value = item.turma;
+                    document.getElementById('cargaHoraria').value = item.cargaHoraria;
+                    document.getElementById('conteudo').value = item.conteudo;
+                    document.getElementById('observacoes').value = item.observacoes || '';
+                    
+                    // Atualiza os dados atuais
+                    localStorage.setItem(localStorageKey, JSON.stringify(item));
+                    displaySavedData(item);
+                    
+                    // Rola para o topo do formulário
+                    document.querySelector('form').scrollIntoView({ behavior: 'smooth' });
+                }
+            };
+        });
+    </script>
+</body>
+</html>
