@@ -94,6 +94,9 @@
                         <button type="button" id="export-pdf" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors">
                             Exportar Histórico
                         </button>
+                        <button type="button" id="clear-history" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">
+                            Limpar Histórico
+                        </button>
                     </div>
                 </form>
             </div>
@@ -130,6 +133,7 @@
             const form = document.getElementById('diario-form');
             const exportPdfBtn = document.getElementById('export-pdf');
             const clearFormBtn = document.getElementById('clear-form');
+            const clearHistoryBtn = document.getElementById('clear-history');
             const historyListBody = document.getElementById('history-list-body');
             
             const localStorageHistoryKey = 'diarioDeClasseHistory';
@@ -148,6 +152,14 @@
 
             clearFormBtn.addEventListener('click', function() {
                 clearForm();
+            });
+
+            clearHistoryBtn.addEventListener('click', function() {
+                if (confirm('Tem certeza que deseja limpar todo o histórico? Esta ação não pode ser desfeita.')) {
+                    localStorage.removeItem(localStorageHistoryKey);
+                    loadHistory();
+                    alert('Histórico limpo com sucesso!');
+                }
             });
 
             function saveData() {
